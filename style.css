@@ -13,10 +13,18 @@
   --radius: 12px;
 }
 
+/* ==========================================
+   RESET AND BASE STYLES
+========================================== */
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -26,13 +34,29 @@ body {
   line-height: 1.5;
 }
 
-button, input, select {
+button,
+input,
+select,
+textarea {
   font: inherit;
 }
 
 button {
   cursor: pointer;
 }
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+img {
+  max-width: 100%;
+}
+
+/* ==========================================
+   SIDEBAR
+========================================== */
 
 .sidebar {
   position: fixed;
@@ -44,6 +68,7 @@ button {
   display: flex;
   flex-direction: column;
   z-index: 10;
+  overflow-y: auto;
 }
 
 .brand {
@@ -51,25 +76,33 @@ button {
   align-items: center;
   gap: 12px;
   padding: 0 8px 28px;
+  min-width: 0;
 }
 
+.brand img,
 .brand-logo {
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.brand > div {
+  min-width: 0;
 }
 
 .brand h2 {
   font-size: 19px;
 }
 
-.brand small, .sidebar-note small {
+.brand small,
+.sidebar-note small {
   color: #bdc9dd;
   font-size: 12px;
 }
 
-.menu-label, .eyebrow {
+.menu-label,
+.eyebrow {
   font-size: 10px;
   font-weight: bold;
   letter-spacing: 1.4px;
@@ -87,16 +120,18 @@ button {
 }
 
 .nav-button {
+  width: 100%;
   text-align: left;
   color: #d8e0ef;
   background: transparent;
   border: 0;
   border-radius: 8px;
   padding: 13px 12px;
-  transition: background .2s;
+  transition: background 0.2s, color 0.2s;
 }
 
-.nav-button:hover, .nav-button.active {
+.nav-button:hover,
+.nav-button.active {
   background: #2b4268;
   color: white;
 }
@@ -115,6 +150,10 @@ button {
   font-size: 13px;
 }
 
+/* ==========================================
+   MAIN CONTENT
+========================================== */
+
 .main {
   margin-left: 245px;
   min-height: 100vh;
@@ -130,11 +169,11 @@ button {
   margin-bottom: 26px;
 }
 
-
 .topbar-left {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .hamburger {
@@ -147,7 +186,6 @@ button {
   font-size: 22px;
   line-height: 1;
 }
-
 
 .eyebrow {
   margin-bottom: 5px;
@@ -178,7 +216,12 @@ p {
   border-radius: 20px;
   font-size: 13px;
   font-weight: bold;
+  white-space: nowrap;
 }
+
+/* ==========================================
+   WELCOME SECTION
+========================================== */
 
 .welcome {
   display: flex;
@@ -196,18 +239,27 @@ p {
   margin-bottom: 6px;
 }
 
-.welcome p, .section-intro p, .panel-heading p {
+.welcome p,
+.section-intro p,
+.panel-heading p {
   font-size: 13px;
   margin-top: 4px;
 }
 
-.primary, .secondary, .danger, .small-button {
+/* ==========================================
+   BUTTONS
+========================================== */
+
+.primary,
+.secondary,
+.danger,
+.small-button {
   border: 0;
   border-radius: 8px;
   padding: 10px 15px;
   font-weight: bold;
   font-size: 13px;
-  transition: opacity .2s, background .2s;
+  transition: opacity 0.2s, background 0.2s;
 }
 
 .primary {
@@ -233,16 +285,28 @@ p {
   color: var(--red);
 }
 
+.danger:hover {
+  background: #ffe1e1;
+}
+
 .small-button {
   padding: 6px 10px;
   background: var(--blue-light);
   color: var(--blue);
 }
 
-button:disabled {
-  opacity: .45;
-  cursor: not-allowed;
+.small-button:hover {
+  background: #dce7ff;
 }
+
+button:focus-visible {
+  outline: 3px solid #82a6ff;
+  outline-offset: 2px;
+}
+
+/* ==========================================
+   DASHBOARD STATISTICS
+========================================== */
 
 .stats {
   display: grid;
@@ -251,7 +315,8 @@ button:disabled {
   margin-bottom: 22px;
 }
 
-.stat-card, .panel {
+.stat-card,
+.panel {
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -287,13 +352,18 @@ button:disabled {
   font-size: 11px;
 }
 
+/* ==========================================
+   PANELS AND SECTION HEADINGS
+========================================== */
+
 .panel {
   padding: 22px;
   margin-bottom: 22px;
   min-width: 0;
 }
 
-.panel-heading, .section-intro {
+.panel-heading,
+.section-intro {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -305,9 +375,14 @@ button:disabled {
   margin-bottom: 22px;
 }
 
+/* ==========================================
+   TABLES
+========================================== */
+
 .table-wrap {
   overflow-x: auto;
   width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -317,7 +392,8 @@ table {
   text-align: left;
 }
 
-th, td {
+th,
+td {
   padding: 14px 12px;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
@@ -328,7 +404,7 @@ th {
   color: var(--muted);
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: .4px;
+  letter-spacing: 0.4px;
   background: #fafbfe;
 }
 
@@ -339,6 +415,10 @@ tbody tr:last-child td {
 tbody tr:hover {
   background: #fafcff;
 }
+
+/* ==========================================
+   STATUS LABELS
+========================================== */
 
 .status {
   display: inline-block;
@@ -360,6 +440,10 @@ tbody tr:hover {
   color: #a76300;
 }
 
+/* ==========================================
+   FORMS
+========================================== */
+
 .form-panel {
   max-width: 100%;
 }
@@ -377,7 +461,9 @@ tbody tr:hover {
   font-weight: bold;
 }
 
-.form-grid input, .form-grid select,
+.form-grid input,
+.form-grid select,
+.form-grid textarea,
 .toolbar input {
   width: 100%;
   min-width: 0;
@@ -389,10 +475,17 @@ tbody tr:hover {
   outline: none;
 }
 
-.form-grid input:focus, .form-grid select:focus,
+.form-grid input:focus,
+.form-grid select:focus,
+.form-grid textarea:focus,
 .toolbar input:focus {
   border-color: var(--blue);
   box-shadow: 0 0 0 3px #2859c51a;
+}
+
+.form-grid textarea {
+  resize: vertical;
+  min-height: 90px;
 }
 
 .full-width {
@@ -406,6 +499,18 @@ tbody tr:hover {
   flex-wrap: wrap;
   margin-top: 22px;
 }
+
+/* ==========================================
+   DATE INPUT
+========================================== */
+
+input[type="date"] {
+  cursor: pointer;
+}
+
+/* ==========================================
+   TOOLBAR AND SEARCH
+========================================== */
 
 .toolbar {
   display: flex;
@@ -425,6 +530,10 @@ tbody tr:hover {
   white-space: nowrap;
 }
 
+/* ==========================================
+   PAYMENT INFORMATION
+========================================== */
+
 .payment-info {
   padding: 15px;
   margin-top: 20px;
@@ -438,14 +547,51 @@ tbody tr:hover {
   color: var(--navy);
 }
 
+/* Cash received and change display */
+
+.payment-cash-info {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.payment-cash-info > div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+}
+
+.payment-cash-info span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+
+.payment-cash-info strong {
+  display: block;
+  color: var(--navy);
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   RECEIPT
+========================================== */
+
 .receipt {
   max-width: 620px;
   margin: 0 auto;
   border: 1px dashed #b7c1d3;
   padding: 24px;
+  background: white;
 }
 
-.receipt h2, .receipt h3 {
+.receipt h2,
+.receipt h3 {
   text-align: center;
 }
 
@@ -468,7 +614,12 @@ tbody tr:hover {
   display: flex;
   justify-content: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
+
+/* ==========================================
+   TOAST NOTIFICATION
+========================================== */
 
 .toast {
   display: none;
@@ -489,6 +640,10 @@ tbody tr:hover {
   color: #a42626;
 }
 
+/* ==========================================
+   PAGE VISIBILITY
+========================================== */
+
 .page {
   display: none;
 }
@@ -501,12 +656,20 @@ tbody tr:hover {
   display: none !important;
 }
 
+/* ==========================================
+   FOOTER
+========================================== */
+
 footer {
   padding: 12px 0;
   color: var(--muted);
   text-align: center;
   font-size: 12px;
 }
+
+/* ==========================================
+   TABLET RESPONSIVENESS
+========================================== */
 
 @media (max-width: 1100px) {
   .stats {
@@ -518,11 +681,17 @@ footer {
   }
 }
 
-
+/* ==========================================
+   MOBILE SIDEBAR OVERLAY
+========================================== */
 
 .sidebar-overlay {
   display: none;
 }
+
+/* ==========================================
+   MOBILE RESPONSIVENESS
+========================================== */
 
 @media (max-width: 720px) {
   .sidebar {
@@ -583,6 +752,7 @@ footer {
   .main {
     margin-left: 0;
     padding: 18px 12px;
+    width: 100%;
   }
 
   .hamburger {
@@ -594,7 +764,9 @@ footer {
     font-size: 23px;
   }
 
-  .welcome, .section-intro, .panel-heading {
+  .welcome,
+  .section-intro,
+  .panel-heading {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -635,24 +807,96 @@ footer {
   .toolbar input {
     max-width: none;
   }
-}
 
-
-
-@media print {
-  body {
-    background: white;
+  .payment-cash-info {
+    grid-template-columns: 1fr;
   }
 
-  .sidebar, .topbar, footer, .section-intro,
-  .form-panel, .stats, .welcome, .panel:not(#receiptArea),
-  #toast, .receipt-actions {
+  .role {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
+
+  .receipt {
+    padding: 16px;
+  }
+}
+
+/* ==========================================
+   SMALL MOBILE SCREENS
+========================================== */
+
+@media (max-width: 380px) {
+  .main {
+    padding: 14px 10px;
+  }
+
+  .topbar {
+    gap: 8px;
+  }
+
+  .topbar-left {
+    gap: 8px;
+  }
+
+  h1 {
+    font-size: 20px;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .welcome {
+    padding: 18px;
+  }
+
+  .panel {
+    padding: 12px;
+  }
+
+  .receipt-line {
+    gap: 8px;
+    font-size: 12px;
+  }
+}
+
+/* ==========================================
+   PRINT RECEIPT ONLY
+========================================== */
+
+@media print {
+  @page {
+    margin: 15mm;
+  }
+
+  body {
+    background: white !important;
+    color: black;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .sidebar,
+  .sidebar-overlay,
+  .topbar,
+  footer,
+  .section-intro,
+  .form-panel,
+  .stats,
+  .welcome,
+  #toast,
+  .receipt-actions {
     display: none !important;
   }
 
   .main {
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
   }
 
   .page {
@@ -663,118 +907,36 @@ footer {
     display: block !important;
   }
 
+  #receiptArea,
+  #receiptArea * {
+    visibility: visible !important;
+  }
+
   #receiptArea {
     display: block !important;
-    border: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
     margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    background: white !important;
   }
 
-  .receipt {
-    border: 1px solid #888;
+  #receiptArea .receipt {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 10px;
+    border: none;
+    box-shadow: none;
+    background: white !important;
+  }
+
+  #receiptArea .receipt-line {
+    color: black;
+    border-bottom: 1px solid #ddd;
   }
 }
-
-/* ==========================================
-   CUSTOM DUE DATE CALENDAR
-========================================== */
-
-.date-input-group {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.date-input-group input {
-  flex: 1;
-  min-width: 0;
-}
-
-.calendar-button {
-  flex-shrink: 0;
-  padding: 10px 14px;
-  cursor: pointer;
-}
-
-.custom-calendar {
-  width: 280px;
-  margin-top: 8px;
-  padding: 14px;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
-}
-
-.custom-calendar.hidden {
-  display: none;
-}
-
-.calendar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-
-.calendar-header button {
-  border: none;
-  background: var(--blue-light);
-  color: var(--navy);
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 18px;
-}
-
-.calendar-weekdays,
-.calendar-days {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-  text-align: center;
-}
-
-.calendar-weekdays span {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  padding-bottom: 8px;
-}
-
-.calendar-day {
-  border: none;
-  background: transparent;
-  color: var(--text);
-  border-radius: 6px;
-  padding: 8px 0;
-  cursor: pointer;
-}
-
-.calendar-day:hover {
-  background: var(--blue-light);
-  color: var(--blue);
-}
-
-.calendar-empty {
-  min-height: 32px;
-}
-
-
-/* Fix FeeCollect sidebar logo */
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.brand img {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.brand > div {
-  min-width: 0;
-}
-
