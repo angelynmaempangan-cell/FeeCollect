@@ -12,6 +12,10 @@ const paymentSuccessSound = new Audio("./sounds/kaching.mp3");
 let data = loadData();
 let toastTimeout;
 
+/* ==================================
+   DATA STORAGE
+================================== */
+
 function loadData() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -20,11 +24,16 @@ function loadData() {
       const parsed = JSON.parse(saved);
 
       if (
+        parsed &&
         Array.isArray(parsed.students) &&
         Array.isArray(parsed.collections) &&
         Array.isArray(parsed.payments)
       ) {
-        return parsed;
+        return {
+          students: parsed.students,
+          collections: parsed.collections,
+          payments: parsed.payments
+        };
       }
     }
   } catch (error) {
@@ -49,6 +58,10 @@ function saveData() {
   }
 }
 
+/* ==================================
+   GENERAL UTILITIES
+================================== */
+
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;",
@@ -60,7 +73,9 @@ function escapeHTML(value) {
 }
 
 function money(value) {
-  return Number(value || 0).toLocaleString("en-PH", {
+  const amount = Number(value);
+
+  return (Number.isFinite(amount) ? amount : 0).toLocaleString("en-PH", {
     style: "currency",
     currency: "PHP"
   });
@@ -71,37 +86,41 @@ function today() {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
+
   return `${year}-${month}-${day}`;
 }
 
 function formatDate(value) {
   if (!value) return "—";
 
-  const parts = value.split("-");
+  const parts = String(value).split("-");
 
-  if (parts.length !== 3) return escapeHTML(value);
+  if (parts.length !== 3) {
+    return escapeHTML(value);
+  }
 
   return `${parts[1]}/${parts[2]}/${parts[0]}`;
 }
 
-
-// ==========================================
-// DUE DATE CALENDAR PICKER
-// ==========================================
-
-
 function showToast(message, isError = false) {
   const toast = document.getElementById("toast");
+
+  if (!toast) return;
 
   toast.textContent = message;
   toast.classList.toggle("error", isError);
   toast.classList.add("show");
 
   clearTimeout(toastTimeout);
+
   toastTimeout = setTimeout(() => {
     toast.classList.remove("show");
   }, 3500);
 }
+
+/* ==================================
+   RECORD LOOKUP AND CALCULATIONS
+================================== */
 
 function studentById(id) {
   return data.students.find(student => student.id === id);
@@ -120,7 +139,7 @@ function paymentsFor(studentId, collectionId) {
 
 function paidFor(studentId, collectionId) {
   return paymentsFor(studentId, collectionId)
-    .reduce((total, payment) => total + Number(payment.amount), 0);
+    .reduce((total, payment) => total + Number(payment.amount || 0), 0);
 }
 
 function balanceFor(studentId, collectionId) {
@@ -137,7 +156,7 @@ function balanceFor(studentId, collectionId) {
 function totalCollectedForCollection(collectionId) {
   return data.payments
     .filter(payment => payment.collectionId === collectionId)
-    .reduce((total, payment) => total + Number(payment.amount), 0);
+    .reduce((total, payment) => total + Number(payment.amount || 0), 0);
 }
 
 function isCollectionActive(collection) {
@@ -145,15 +164,12 @@ function isCollectionActive(collection) {
 }
 
 function receiptNumber(payment) {
-  return payment.receipt;
+  return payment.receipt || payment.id || "—";
 }
 
 /* ==================================
    NAVIGATION
 ================================== */
-
-
-/* WORKING PAGE NAVIGATION */
 
 const pageTitles = {
   dashboard: "Dashboard",
@@ -171,55 +187,49 @@ function showPage(pageId) {
     return;
   }
 
-  // Hide all pages
   document.querySelectorAll(".page").forEach(page => {
     page.classList.remove("active-page");
   });
 
-  // Show the selected page
   selectedPage.classList.add("active-page");
 
-  // Update the sidebar highlight
   document.querySelectorAll(".nav-button[data-page]").forEach(button => {
     button.classList.toggle("active", button.dataset.page === pageId);
   });
 
-  // Update the heading
   const title = document.getElementById("pageTitle");
 
   if (title && pageTitles[pageId]) {
     title.textContent = pageTitles[pageId];
   }
 
-  // Refresh page content when changing pages
-  if (typeof renderAll === "function") {
-    renderAll();
-  }
+  renderAll();
 
   window.scrollTo(0, 0);
 }
 
-// Sidebar navigation
 document.querySelectorAll(".nav-button[data-page]").forEach(button => {
   button.addEventListener("click", () => {
     showPage(button.dataset.page);
   });
 });
 
-// Dashboard shortcut buttons
 document.querySelectorAll("[data-go]").forEach(button => {
   button.addEventListener("click", () => {
     showPage(button.dataset.go);
   });
 });
 
-
 /* ==================================
    FORM SHOW / HIDE
 ================================== */
 
 function toggleForm(formId, show) {
-  document.getElementById(formId).classList.toggle("hidden", !show);
+  const form = document.getElementById(formId);
+
+  if (form) {
+    form.classList.toggle("hidden", !show);
+  }
 }
 
 document.getElementById("showStudentForm").addEventListener("click", () => {
@@ -259,7 +269,7 @@ document.getElementById("studentForm").addEventListener("submit", event => {
   }
 
   const duplicate = data.students.some(student =>
-    student.id.toLowerCase() === id.toLowerCase()
+    String(student.id).toLowerCase() === id.toLowerCase()
   );
 
   if (duplicate) {
@@ -267,12 +277,14 @@ document.getElementById("studentForm").addEventListener("submit", event => {
     return;
   }
 
-  data.students.push({
+  const student = {
     id,
     name,
     section,
     createdAt: today()
-  });
+  };
+
+  data.students.push(student);
 
   if (!saveData()) {
     data.students.pop();
@@ -292,9 +304,9 @@ function renderStudents() {
 
   const students = data.students.filter(student =>
     !student.archived && (
-      student.id.toLowerCase().includes(search) ||
-      student.name.toLowerCase().includes(search) ||
-      student.section.toLowerCase().includes(search)
+      String(student.id).toLowerCase().includes(search) ||
+      String(student.name).toLowerCase().includes(search) ||
+      String(student.section || "").toLowerCase().includes(search)
     )
   );
 
@@ -308,7 +320,8 @@ function renderStudents() {
   const tbody = document.getElementById("studentsTable");
 
   if (!students.length) {
-    tbody.innerHTML = `<tr><td colspan="4">No student records found.</td></tr>`;
+    tbody.innerHTML =
+      `<tr><td colspan="4">No student records found.</td></tr>`;
   } else {
     tbody.innerHTML = students.map(student => {
       const hasPayments = data.payments.some(
@@ -363,7 +376,7 @@ document.getElementById("studentsTable").addEventListener("click", event => {
     const id = archiveButton.dataset.archiveStudent;
     const student = studentById(id);
 
-    if (!student) return;
+    if (!student || student.archived) return;
 
     if (!confirm(`Archive student "${student.name}"?`)) return;
 
@@ -392,9 +405,13 @@ document.getElementById("studentsTable").addEventListener("click", event => {
 
     if (!confirm(`Delete student "${student.name}"?`)) return;
 
+    const previousStudents = data.students;
     data.students = data.students.filter(item => item.id !== id);
 
-    if (!saveData()) return;
+    if (!saveData()) {
+      data.students = previousStudents;
+      return;
+    }
 
     renderAll();
     showToast("Student record deleted.");
@@ -403,6 +420,7 @@ document.getElementById("studentsTable").addEventListener("click", event => {
 
 document.getElementById("archivedStudentsTable").addEventListener("click", event => {
   const restoreButton = event.target.closest("[data-restore-student]");
+
   if (!restoreButton) return;
 
   const id = restoreButton.dataset.restoreStudent;
@@ -434,18 +452,20 @@ document.getElementById("collectionForm").addEventListener("submit", event => {
   const amount = Number(document.getElementById("collectionAmount").value);
   const dueDate = document.getElementById("collectionDue").value;
 
-  if (!name || !Number.isFinite(amount) || amount <= 0) {
-    showToast("Enter a collection name and a valid amount.", true);
+  if (!name || !Number.isFinite(amount) || amount <= 0 || !dueDate) {
+    showToast("Enter a collection name, valid amount, and due date.", true);
     return;
   }
 
-  data.collections.push({
+  const collection = {
     id: "COL-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
     name,
     amount,
     dueDate,
     createdAt: today()
-  });
+  };
+
+  data.collections.push(collection);
 
   if (!saveData()) {
     data.collections.pop();
@@ -533,7 +553,6 @@ function renderCollections() {
   }
 }
 
-
 document.getElementById("collectionsTable").addEventListener("click", event => {
   const payButton = event.target.closest("[data-pay-collection]");
   const archiveButton = event.target.closest("[data-archive-collection]");
@@ -550,12 +569,14 @@ document.getElementById("collectionsTable").addEventListener("click", event => {
     }
 
     showPage("payments");
+
     document.getElementById("paymentCollection").value = id;
     updatePaymentInfo();
+
     return;
   }
 
-  // Archive collection
+  // Archive Collection
   if (archiveButton) {
     const id = archiveButton.dataset.archiveCollection;
     const collection = collectionById(id);
@@ -576,7 +597,7 @@ document.getElementById("collectionsTable").addEventListener("click", event => {
     return;
   }
 
-  // Permanently delete collection without payments
+  // Delete Collection
   if (deleteButton) {
     const id = deleteButton.dataset.deleteCollection;
     const collection = collectionById(id);
@@ -590,18 +611,24 @@ document.getElementById("collectionsTable").addEventListener("click", event => {
 
     if (!confirm(`Delete collection "${collection.name}"?`)) return;
 
+    const previousCollections = data.collections;
+
     data.collections = data.collections.filter(item => item.id !== id);
 
-    if (!saveData()) return;
+    if (!saveData()) {
+      data.collections = previousCollections;
+      return;
+    }
 
     renderAll();
     showToast("Collection deleted.");
   }
 });
 
-// Restore archived collections
+// Restore Archived Collections
 document.getElementById("archivedCollectionsTable").addEventListener("click", event => {
   const restoreButton = event.target.closest("[data-restore-collection]");
+
   if (!restoreButton) return;
 
   const id = restoreButton.dataset.restoreCollection;
@@ -622,11 +649,9 @@ document.getElementById("archivedCollectionsTable").addEventListener("click", ev
   showToast("Collection restored successfully.");
 });
 
-
 /* ==================================
    PAYMENT FORM
 ================================== */
-
 
 function populatePaymentOptions() {
   const studentSelect = document.getElementById("paymentStudent");
@@ -635,7 +660,7 @@ function populatePaymentOptions() {
   const previousStudent = studentSelect.value;
   const previousCollection = collectionSelect.value;
 
-  // Show active students only.
+  // Active Students
   studentSelect.innerHTML =
     `<option value="">Select a student</option>` +
     data.students
@@ -646,18 +671,20 @@ function populatePaymentOptions() {
         </option>
       `).join("");
 
-  // Show active, non-archived collections only.
+  // Active, Non-Archived Collections
   collectionSelect.innerHTML =
     `<option value="">Select a collection</option>` +
     data.collections
-      .filter(collection => !collection.archived && isCollectionActive(collection))
+      .filter(collection =>
+        !collection.archived && isCollectionActive(collection)
+      )
       .map(collection => `
         <option value="${escapeHTML(collection.id)}">
           ${escapeHTML(collection.name)} — ${money(collection.amount)}
         </option>
       `).join("");
 
-  // Preserve previous selections only if they are still available.
+  // Restore Previous Selections
   if (data.students.some(student =>
     student.id === previousStudent && !student.archived
   )) {
@@ -673,7 +700,6 @@ function populatePaymentOptions() {
   }
 }
 
-
 document.getElementById("paymentDate").value = today();
 
 document.getElementById("paymentStudent").addEventListener("change", updatePaymentInfo);
@@ -683,13 +709,10 @@ function updatePaymentInfo() {
   const studentId = document.getElementById("paymentStudent").value;
   const collectionId = document.getElementById("paymentCollection").value;
   const info = document.getElementById("paymentInfo");
-  const amountInput = document.getElementById("paymentAmount");
 
   if (!studentId || !collectionId) {
     info.textContent = "Select a student and collection to view the balance.";
-    amountInput.removeAttribute("max");
-    amountInput.disabled = false;
-    amountInput.placeholder = "Enter payment amount";
+    updateCashDisplay();
     return;
   }
 
@@ -697,8 +720,8 @@ function updatePaymentInfo() {
   const collection = collectionById(collectionId);
 
   if (!student || !collection) {
-    amountInput.removeAttribute("max");
-    amountInput.disabled = false;
+    info.textContent = "Student or collection record unavailable.";
+    updateCashDisplay();
     return;
   }
 
@@ -712,48 +735,86 @@ function updatePaymentInfo() {
     <strong>Remaining Balance:</strong> ${money(balance)}
   `;
 
-  if (balance > 0) {
-    amountInput.max = balance.toFixed(2);
-    amountInput.min = "0.01";
-    amountInput.disabled = false;
-    amountInput.placeholder = `Up to ${balance.toFixed(2)}`;
-  } else {
-    amountInput.removeAttribute("max");
-    amountInput.disabled = true;
-    amountInput.value = "";
-    amountInput.placeholder = "Fully paid";
-  }
+  updateCashDisplay();
 }
+
+/* ==================================
+   CASH RECEIVED AND CHANGE DISPLAY
+================================== */
+
+function updateCashDisplay() {
+  const cashReceivedInput = document.getElementById("cashReceived");
+
+  const displayPaymentAmount = document.getElementById("displayPaymentAmount");
+  const displayCashReceived = document.getElementById("displayCashReceived");
+  const displayChange = document.getElementById("displayChange");
+
+  const studentId = document.getElementById("paymentStudent").value;
+  const collectionId = document.getElementById("paymentCollection").value;
+
+  const cash = Number(cashReceivedInput.value);
+
+  const balance = studentId && collectionId
+    ? balanceFor(studentId, collectionId)
+    : 0;
+
+  const hasCash = cashReceivedInput.value.trim() !== "";
+  const validCash = hasCash && Number.isFinite(cash) && cash > 0;
+
+  const amount = validCash ? Math.min(cash, balance) : 0;
+  const change = validCash ? Math.max(0, cash - amount) : 0;
+
+  displayPaymentAmount.textContent = money(amount);
+  displayCashReceived.textContent = money(validCash ? cash : 0);
+  displayChange.textContent = money(change);
+}
+
+document.getElementById("cashReceived")
+  .addEventListener("input", updateCashDisplay);
+
+/* ==================================
+   RECORD PAYMENT
+================================== */
 
 document.getElementById("paymentForm").addEventListener("submit", event => {
   event.preventDefault();
 
   const studentId = document.getElementById("paymentStudent").value;
   const collectionId = document.getElementById("paymentCollection").value;
-  const amount = Number(document.getElementById("paymentAmount").value);
+  const cashReceived = Number(document.getElementById("cashReceived").value);
   const date = document.getElementById("paymentDate").value;
   const notes = document.getElementById("paymentNotes").value.trim();
 
-  const student = studentById(studentId);
-  const collection = collectionById(collectionId);
-
-  if (!student || student.archived || !collection || collection.archived) {
-    showToast("Select a valid student and fee collection.", true);
+  if (!studentId || !collectionId) {
+    showToast("Select a student and collection.", true);
     return;
   }
 
-  if (!isCollectionActive(collection)) {
-    showToast("This collection is past its due date.", true);
-    return;
-  }
-
-  if (!Number.isFinite(amount) || amount <= 0 || !date) {
-    showToast("Enter a valid payment amount and date.", true);
+  if (!date) {
+    showToast("Enter the payment date.", true);
     return;
   }
 
   if (date > today()) {
     showToast("The payment date cannot be in the future.", true);
+    return;
+  }
+
+  if (!Number.isFinite(cashReceived) || cashReceived <= 0) {
+    showToast("Enter a valid cash amount.", true);
+    return;
+  }
+
+  const student = studentById(studentId);
+  const collection = collectionById(collectionId);
+
+  if (!student || student.archived) {
+    showToast("This student is unavailable.", true);
+    return;
+  }
+
+  if (!collection || collection.archived || !isCollectionActive(collection)) {
+    showToast("This collection is unavailable.", true);
     return;
   }
 
@@ -764,10 +825,9 @@ document.getElementById("paymentForm").addEventListener("submit", event => {
     return;
   }
 
-  if (amount > balance + 0.000001) {
-    showToast(`Payment cannot exceed the remaining balance of ${money(balance)}.`, true);
-    return;
-  }
+  // Automatically calculate the payment amount and change.
+  const amount = Math.min(cashReceived, balance);
+  const change = Math.max(0, cashReceived - amount);
 
   const payment = {
     id: "PAY-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
@@ -775,6 +835,8 @@ document.getElementById("paymentForm").addEventListener("submit", event => {
     studentId,
     collectionId,
     amount: Math.round(amount * 100) / 100,
+    cashReceived: Math.round(cashReceived * 100) / 100,
+    change: Math.round(change * 100) / 100,
     date,
     notes,
     createdAt: new Date().toISOString()
@@ -787,21 +849,30 @@ document.getElementById("paymentForm").addEventListener("submit", event => {
     return;
   }
 
-  document.getElementById("paymentAmount").value = "";
+  // Clear cash and notes after successful recording.
+  document.getElementById("cashReceived").value = "";
   document.getElementById("paymentNotes").value = "";
 
+  // Refresh all records.
   renderAll();
-  populatePaymentOptions();
+
+  // Preserve the current student and collection selections.
   document.getElementById("paymentStudent").value = studentId;
   document.getElementById("paymentCollection").value = collectionId;
-  updatePaymentInfo();
 
-    paymentSuccessSound.currentTime = 0;
+  updatePaymentInfo();
+  updateCashDisplay();
+
+  // Play success sound.
+  paymentSuccessSound.currentTime = 0;
+
   paymentSuccessSound.play().catch(error => {
     console.warn("Could not play payment success sound:", error);
   });
 
+  // Generate receipt.
   showReceipt(payment.id);
+
   showToast("Payment recorded. Receipt generated.");
 });
 
@@ -811,23 +882,33 @@ document.getElementById("paymentForm").addEventListener("submit", event => {
 
 function showReceipt(paymentId) {
   const payment = data.payments.find(item => item.id === paymentId);
-  if (!payment) return;
+
+  if (!payment) {
+    showToast("Payment record not found.", true);
+    return;
+  }
 
   const student = studentById(payment.studentId);
   const collection = collectionById(payment.collectionId);
 
-  if (!student || !collection) return;
+  if (!student || !collection) {
+    showToast("Student or collection record unavailable.", true);
+    return;
+  }
 
   const paid = paidFor(payment.studentId, payment.collectionId);
   const balance = balanceFor(payment.studentId, payment.collectionId);
 
   const area = document.getElementById("receiptArea");
+
   area.classList.remove("hidden");
 
   area.innerHTML = `
     <div class="receipt">
+
       <h2>FeeCollect</h2>
       <h3>PAYMENT RECEIPT</h3>
+
       <p style="text-align:center;margin:8px 0 20px">
         Keep this receipt as proof of payment.
       </p>
@@ -836,42 +917,62 @@ function showReceipt(paymentId) {
         <span>Receipt Number</span>
         <strong>${escapeHTML(receiptNumber(payment))}</strong>
       </div>
+
       <div class="receipt-line">
         <span>Date of Payment</span>
         <strong>${formatDate(payment.date)}</strong>
       </div>
+
       <div class="receipt-line">
         <span>Student ID</span>
         <strong>${escapeHTML(student.id)}</strong>
       </div>
+
       <div class="receipt-line">
         <span>Student Name</span>
         <strong>${escapeHTML(student.name)}</strong>
       </div>
+
       <div class="receipt-line">
         <span>Course / Section</span>
         <strong>${escapeHTML(student.section || "—")}</strong>
       </div>
+
       <div class="receipt-line">
         <span>Fee Collection</span>
         <strong>${escapeHTML(collection.name)}</strong>
       </div>
+
       <div class="receipt-line">
         <span>Fee Amount</span>
         <strong>${money(collection.amount)}</strong>
       </div>
+
       <div class="receipt-line">
-        <span>Amount Received</span>
+        <span>Amount Paid</span>
         <strong>${money(payment.amount)}</strong>
       </div>
+
+      <div class="receipt-line">
+        <span>Cash Received</span>
+        <strong>${money(payment.cashReceived ?? payment.amount)}</strong>
+      </div>
+
+      <div class="receipt-line">
+        <span>Change</span>
+        <strong>${money(payment.change ?? 0)}</strong>
+      </div>
+
       <div class="receipt-line">
         <span>Total Paid for this Fee</span>
         <strong>${money(paid)}</strong>
       </div>
+
       <div class="receipt-line">
         <span>Remaining Balance</span>
         <strong>${money(balance)}</strong>
       </div>
+
       ${payment.notes ? `
         <div class="receipt-line">
           <span>Notes</span>
@@ -884,25 +985,38 @@ function showReceipt(paymentId) {
       </p>
 
       <div class="receipt-actions">
-        <button class="primary" id="printReceipt">Print Receipt</button>
-        <button class="secondary" id="closeReceipt">Close</button>
+        <button class="primary" id="printReceipt">
+          Print Receipt
+        </button>
+
+        <button class="secondary" id="closeReceipt">
+          Close
+        </button>
       </div>
+
     </div>
   `;
 
+  // PRINT RECEIPT BUTTON
   document.getElementById("printReceipt").addEventListener("click", () => {
     window.print();
   });
 
+  // CLOSE RECEIPT BUTTON
   document.getElementById("closeReceipt").addEventListener("click", () => {
     area.classList.add("hidden");
   });
 
-  area.scrollIntoView({ behavior: "smooth", block: "start" });
+  area.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 }
 
+// View receipt from Payment History.
 document.getElementById("historyTable").addEventListener("click", event => {
   const button = event.target.closest("[data-print-payment]");
+
   if (!button) return;
 
   showPage("payments");
@@ -910,7 +1024,7 @@ document.getElementById("historyTable").addEventListener("click", event => {
 });
 
 /* ==================================
-   PAYMENT HISTORY AND CSV EXPORT
+   PAYMENT HISTORY
 ================================== */
 
 function renderHistory() {
@@ -918,13 +1032,16 @@ function renderHistory() {
     .value.trim().toLowerCase();
 
   const payments = [...data.payments]
-    .sort((a, b) => (b.createdAt || b.date).localeCompare(a.createdAt || a.date))
+    .sort((a, b) =>
+      String(b.createdAt || b.date || "")
+        .localeCompare(String(a.createdAt || a.date || ""))
+    )
     .filter(payment => {
       const student = studentById(payment.studentId);
       const collection = collectionById(payment.collectionId);
 
       const searchable = [
-        payment.receipt,
+        receiptNumber(payment),
         payment.date,
         student?.id,
         student?.name,
@@ -941,7 +1058,8 @@ function renderHistory() {
   const tbody = document.getElementById("historyTable");
 
   if (!payments.length) {
-    tbody.innerHTML = `<tr><td colspan="6">No payment records found.</td></tr>`;
+    tbody.innerHTML =
+      `<tr><td colspan="6">No payment records found.</td></tr>`;
     return;
   }
 
@@ -951,13 +1069,14 @@ function renderHistory() {
 
     return `
       <tr>
-        <td>${escapeHTML(payment.receipt)}</td>
+        <td>${escapeHTML(receiptNumber(payment))}</td>
         <td>${formatDate(payment.date)}</td>
         <td>${escapeHTML(student?.name || "Student record unavailable")}</td>
         <td>${escapeHTML(collection?.name || "Collection unavailable")}</td>
         <td><strong>${money(payment.amount)}</strong></td>
         <td>
-          <button class="small-button" data-print-payment="${escapeHTML(payment.id)}">
+          <button class="small-button"
+            data-print-payment="${escapeHTML(payment.id)}">
             View Receipt
           </button>
         </td>
@@ -966,7 +1085,12 @@ function renderHistory() {
   }).join("");
 }
 
-document.getElementById("historySearch").addEventListener("input", renderHistory);
+document.getElementById("historySearch")
+  .addEventListener("input", renderHistory);
+
+/* ==================================
+   CSV EXPORT
+================================== */
 
 document.getElementById("exportCsv").addEventListener("click", () => {
   if (!data.payments.length) {
@@ -978,24 +1102,38 @@ document.getElementById("exportCsv").addEventListener("click", () => {
     let text = String(value ?? "");
 
     // Protect spreadsheet applications from interpreting text as formulas.
-    if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
+    if (/^[=+\-@\t\r]/.test(text)) {
+      text = "'" + text;
+    }
 
     return `"${text.replace(/"/g, '""')}"`;
   };
 
   const rows = [
-    ["Receipt No.", "Date", "Student ID", "Student Name",
-      "Course / Section", "Collection", "Fee Amount", "Amount Paid", "Remaining Balance", "Notes"]
+    [
+      "Receipt No.",
+      "Date",
+      "Student ID",
+      "Student Name",
+      "Course / Section",
+      "Collection",
+      "Fee Amount",
+      "Amount Paid",
+      "Cash Received",
+      "Change",
+      "Remaining Balance",
+      "Notes"
+    ]
   ];
 
   [...data.payments]
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")))
     .forEach(payment => {
       const student = studentById(payment.studentId);
       const collection = collectionById(payment.collectionId);
 
       rows.push([
-        payment.receipt,
+        receiptNumber(payment),
         payment.date,
         student?.id || "",
         student?.name || "",
@@ -1003,23 +1141,31 @@ document.getElementById("exportCsv").addEventListener("click", () => {
         collection?.name || "",
         collection?.amount ?? "",
         payment.amount,
+        payment.cashReceived ?? payment.amount,
+        payment.change ?? 0,
         balanceFor(payment.studentId, payment.collectionId),
         payment.notes || ""
       ]);
     });
 
-  const csv = rows.map(row => row.map(csvEscape).join(",")).join("\r\n");
+  const csv = rows
+    .map(row => row.map(csvEscape).join(","))
+    .join("\r\n");
+
   const blob = new Blob(["\uFEFF" + csv], {
     type: "text/csv;charset=utf-8;"
   });
 
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
+
   link.href = url;
   link.download = `FeeCollect-Payments-${today()}.csv`;
+
   document.body.appendChild(link);
   link.click();
   link.remove();
+
   URL.revokeObjectURL(url);
 
   showToast("Payment history exported to CSV.");
@@ -1028,7 +1174,6 @@ document.getElementById("exportCsv").addEventListener("click", () => {
 /* ==================================
    DASHBOARD
 ================================== */
-
 
 function renderDashboard() {
   const activeStudents = data.students.filter(
@@ -1039,12 +1184,11 @@ function renderDashboard() {
     collection => !collection.archived
   );
 
-  // Keep all historical payments in the total collected.
   const totalCollected = data.payments.reduce(
-    (total, payment) => total + Number(payment.amount), 0
+    (total, payment) => total + Number(payment.amount || 0),
+    0
   );
 
-  // Calculate outstanding balances using active records only.
   const totalBalance = activeCollections.reduce((total, collection) => {
     return total + activeStudents.reduce((studentTotal, student) => {
       return studentTotal + balanceFor(student.id, collection.id);
@@ -1063,11 +1207,13 @@ function renderDashboard() {
   document.getElementById("statBalance").textContent =
     money(totalBalance);
 
-  // Recent active collections only.
+  // Recent Collections
   const collectionsBody = document.getElementById("dashboardCollections");
 
   const recentCollections = [...activeCollections]
-    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
+    .sort((a, b) =>
+      String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
+    )
     .slice(0, 5);
 
   if (!recentCollections.length) {
@@ -1088,12 +1234,13 @@ function renderDashboard() {
     `).join("");
   }
 
-  // Keep historical payments visible, including archived records.
+  // Recent Payments
   const paymentsBody = document.getElementById("dashboardPayments");
 
   const recentPayments = [...data.payments]
     .sort((a, b) =>
-      (b.createdAt || b.date).localeCompare(a.createdAt || a.date)
+      String(b.createdAt || b.date || "")
+        .localeCompare(String(a.createdAt || a.date || ""))
     )
     .slice(0, 5);
 
@@ -1107,7 +1254,7 @@ function renderDashboard() {
 
       return `
         <tr>
-          <td>${escapeHTML(payment.receipt)}</td>
+          <td>${escapeHTML(receiptNumber(payment))}</td>
           <td>${escapeHTML(student?.name || "Unavailable")}</td>
           <td>${escapeHTML(collection?.name || "Unavailable")}</td>
           <td>${money(payment.amount)}</td>
@@ -1117,7 +1264,6 @@ function renderDashboard() {
     }).join("");
   }
 }
-
 
 /* ==================================
    REFRESH ALL PAGES
@@ -1132,31 +1278,33 @@ function renderAll() {
   updatePaymentInfo();
 }
 
-// Initial display
-// ARCHIVED PANEL VISIBILITY
+/* ==================================
+   ARCHIVED PANEL VISIBILITY
+================================== */
 
 document.getElementById("viewArchivedCollections").addEventListener("click", () => {
-  document.getElementById("archivedCollectionsPanel").classList.remove("hidden");
+  document.getElementById("archivedCollectionsPanel")
+    .classList.remove("hidden");
 });
 
 document.getElementById("hideArchivedCollections").addEventListener("click", () => {
-  document.getElementById("archivedCollectionsPanel").classList.add("hidden");
+  document.getElementById("archivedCollectionsPanel")
+    .classList.add("hidden");
 });
 
 document.getElementById("viewArchivedStudents").addEventListener("click", () => {
-  document.getElementById("archivedStudentsPanel").classList.remove("hidden");
+  document.getElementById("archivedStudentsPanel")
+    .classList.remove("hidden");
 });
 
 document.getElementById("hideArchivedStudents").addEventListener("click", () => {
-  document.getElementById("archivedStudentsPanel").classList.add("hidden");
+  document.getElementById("archivedStudentsPanel")
+    .classList.add("hidden");
 });
-renderAll();
-showPage("dashboard");
 
-
-// ==========================================
-// MOBILE HAMBURGER MENU
-// ==========================================
+/* ==================================
+   MOBILE HAMBURGER MENU
+================================== */
 
 const hamburgerMenu = document.getElementById("hamburgerMenu");
 const sidebarOverlay = document.getElementById("sidebarOverlay");
@@ -1171,7 +1319,6 @@ function closeMobileMenu() {
   hamburgerMenu.setAttribute("aria-expanded", "false");
 }
 
-// Toggle menu
 hamburgerMenu.addEventListener("click", () => {
   if (document.body.classList.contains("menu-open")) {
     closeMobileMenu();
@@ -1180,17 +1327,21 @@ hamburgerMenu.addEventListener("click", () => {
   }
 });
 
-// Close when overlay is clicked
 sidebarOverlay.addEventListener("click", closeMobileMenu);
 
-// Close after selecting a navigation item
 document.querySelectorAll(".sidebar .nav-button").forEach(button => {
   button.addEventListener("click", closeMobileMenu);
 });
 
-// Close using Escape key
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") {
     closeMobileMenu();
   }
 });
+
+/* ==================================
+   INITIAL DISPLAY
+================================== */
+
+renderAll();
+showPage("dashboard");
