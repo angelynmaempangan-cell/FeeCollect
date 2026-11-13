@@ -11,7 +11,7 @@
 <body>
   <aside class="sidebar">
     <div class="brand">
-       <img src="logo.png" alt="FeeCollect Logo" class="brand-logo">
+       <img src="./images/logo.png" alt="FeeCollect Logo" class="brand-logo">
       <div>
         <h2>FeeCollect</h2>
         <small>Class Fee Collection</small>
@@ -33,14 +33,31 @@
     </div>
   </aside>
 
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
   <main class="main">
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">CLASS FEE MANAGEMENT</p>
-        <h1 id="pageTitle">Dashboard</h1>
-      </div>
-      <span class="role">Treasurer</span>
-    </header>
+    
+<header class="topbar">
+  <div class="topbar-left">
+    <button
+      class="hamburger"
+      id="hamburgerMenu"
+      aria-label="Open navigation menu"
+      aria-expanded="false"
+      aria-controls="mobileSidebar"
+    >
+      ☰
+    </button>
+
+    <div>
+      <p class="eyebrow">CLASS FEE MANAGEMENT</p>
+      <h1 id="pageTitle">Dashboard</h1>
+    </div>
+  </div>
+
+  <span class="role">Treasurer</span>
+</header>
+
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -146,9 +163,49 @@
             <input id="collectionAmount" type="number" min="0.01"
               step="0.01" required placeholder="e.g. 50">
           </label>
-          <label>Due Date
-            <input id="collectionDue" type="date">
-          </label>
+
+<label>Due Date (MM/DD/YYYY)
+  <div class="date-input-group">
+    <input
+      id="collectionDue"
+      type="text"
+      placeholder="MM/DD/YYYY"
+      inputmode="numeric"
+      maxlength="10"
+      autocomplete="off"
+    >
+
+    <button
+      type="button"
+      class="secondary calendar-button"
+      id="openDueDatePicker"
+      aria-label="Open calendar"
+    >
+      📅
+    </button>
+  </div>
+
+  <div id="dueDateCalendar" class="custom-calendar hidden">
+    <div class="calendar-header">
+      <button type="button" id="prevMonth">‹</button>
+      <strong id="calendarMonthYear"></strong>
+      <button type="button" id="nextMonth">›</button>
+    </div>
+
+    <div class="calendar-weekdays">
+      <span>Sun</span>
+      <span>Mon</span>
+      <span>Tue</span>
+      <span>Wed</span>
+      <span>Thu</span>
+      <span>Fri</span>
+      <span>Sat</span>
+    </div>
+
+    <div id="calendarDays" class="calendar-days"></div>
+  </div>
+</label>
+
         </div>
         <div class="form-actions">
           <button type="button" class="secondary" id="cancelCollection">Cancel</button>
@@ -173,6 +230,34 @@
           </table>
         </div>
       </div>
+
+      
+      <button class="secondary" id="viewArchivedCollections">
+        View Archived Collections
+      </button>
+      <div class="panel hidden" id="archivedCollectionsPanel">
+        <div class="panel-heading">
+          <h3>Archived Collections</h3>
+          <button class="secondary" id="hideArchivedCollections">
+            Hide Archived
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Collection</th>
+                <th>Amount</th>
+                <th>Due Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="archivedCollectionsTable"></tbody>
+          </table>
+        </div>
+      </div>
+
     </section>
 
     <!-- STUDENTS -->
@@ -223,6 +308,33 @@
               </tr>
             </thead>
             <tbody id="studentsTable"></tbody>
+          </table>
+        </div>
+      </div>
+            <div class="panel">
+        
+
+        <button class="secondary" id="viewArchivedStudents">
+          View Archived Students
+        </button>
+        <div class="panel hidden" id="archivedStudentsPanel">
+          <h3>Archived Students</h3>
+          <button class="secondary" id="hideArchivedStudents">
+            Hide Archived
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Full Name</th>
+                <th>Course / Section</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="archivedStudentsTable"></tbody>
           </table>
         </div>
       </div>
