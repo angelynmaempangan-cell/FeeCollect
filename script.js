@@ -7,6 +7,8 @@
 
 const STORAGE_KEY = "feecollect_system_v2";
 
+const paymentSuccessSound = new Audio("./sounds/kaching.mp3");
+
 let data = loadData();
 let toastTimeout;
 
@@ -81,6 +83,79 @@ function formatDate(value) {
 
   return `${parts[1]}/${parts[2]}/${parts[0]}`;
 }
+
+// ==========================================
+// CUSTOM DUE DATE CALENDAR
+// ==========================================
+
+const dueDateInput = document.getElementById("collectionDue");
+const calendarButton = document.getElementById("openDueDatePicker");
+const dueDateCalendar = document.getElementById("dueDateCalendar");
+const calendarMonthYear = document.getElementById("calendarMonthYear");
+const calendarDays = document.getElementById("calendarDays");
+const prevMonthButton = document.getElementById("prevMonth");
+const nextMonthButton = document.getElementById("nextMonth");
+
+let calendarDate = new Date();
+calendarDate.setDate(1);
+
+function renderDueDateCalendar() {
+  const year = calendarDate.getFullYear();
+  const month = calendarDate.getMonth();
+
+  calendarMonthYear.textContent = calendarDate.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric"
+  });
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  calendarDays.innerHTML = "";
+
+  for (let i = 0; i < firstDay; i++) {
+    const blank = document.createElement("span");
+    blank.className = "calendar-empty";
+    calendarDays.appendChild(blank);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = day;
+    button.className = "calendar-day";
+
+    button.addEventListener("click", () => {
+      const monthText = String(month + 1).padStart(2, "0");
+      const dayText = String(day).padStart(2, "0");
+
+      dueDateInput.value = `${monthText}/${dayText}/${year}`;
+      dueDateCalendar.classList.add("hidden");
+    });
+
+    calendarDays.appendChild(button);
+  }
+}
+
+calendarButton.addEventListener("click", () => {
+  dueDateCalendar.classList.toggle("hidden");
+  renderDueDateCalendar();
+});
+
+prevMonthButton.addEventListener("click", () => {
+  calendarDate.setMonth(calendarDate.getMonth() - 1);
+  renderDueDateCalendar();
+});
+
+nextMonthButton.addEventListener("click", () => {
+  calendarDate.setMonth(calendarDate.getMonth() + 1);
+  renderDueDateCalendar();
+});
+
+// ==========================================
+// DUE DATE CALENDAR PICKER
+// ==========================================
+
 
 function showToast(message, isError = false) {
   const toast = document.getElementById("toast");
@@ -283,9 +358,15 @@ function renderStudents() {
     .value.trim().toLowerCase();
 
   const students = data.students.filter(student =>
-    student.id.toLowerCase().includes(search) ||
-    student.name.toLowerCase().includes(search) ||
-    student.section.toLowerCase().includes(search)
+    !student.archived && (
+      student.id.toLowerCase().includes(search) ||
+      student.name.toLowerCase().includes(search) ||
+      student.section.toLowerCase().includes(search)
+    )
+  );
+
+  const archivedStudents = data.students.filter(student =>
+    student.archived
   );
 
   document.getElementById("studentCount").textContent =
@@ -295,54 +376,118 @@ function renderStudents() {
 
   if (!students.length) {
     tbody.innerHTML = `<tr><td colspan="4">No student records found.</td></tr>`;
-    return;
+  } else {
+    tbody.innerHTML = students.map(student => {
+      const hasPayments = data.payments.some(
+        payment => payment.studentId === student.id
+      );
+
+      return `
+        <tr>
+          <td>${escapeHTML(student.id)}</td>
+          <td>${escapeHTML(student.name)}</td>
+          <td>${escapeHTML(student.section || "—")}</td>
+          <td>
+            ${
+              hasPayments
+                ? `<button class="secondary" data-archive-student="${escapeHTML(student.id)}">Archive</button>`
+                : `<button class="danger" data-delete-student="${escapeHTML(student.id)}">Delete</button>`
+            }
+          </td>
+        </tr>
+      `;
+    }).join("");
   }
 
-  tbody.innerHTML = students.map(student => {
-    const hasPayments = data.payments.some(
-      payment => payment.studentId === student.id
-    );
+  const archivedBody = document.getElementById("archivedStudentsTable");
 
-    return `
+  if (!archivedStudents.length) {
+    archivedBody.innerHTML =
+      `<tr><td colspan="4">No archived students.</td></tr>`;
+  } else {
+    archivedBody.innerHTML = archivedStudents.map(student => `
       <tr>
         <td>${escapeHTML(student.id)}</td>
         <td>${escapeHTML(student.name)}</td>
         <td>${escapeHTML(student.section || "—")}</td>
         <td>
-          <button class="danger" data-delete-student="${escapeHTML(student.id)}"
-            ${hasPayments ? "disabled title='Student has payment records'" : ""}>
-            Delete
+          <button class="secondary" data-restore-student="${escapeHTML(student.id)}">
+            Restore
           </button>
         </td>
       </tr>
-    `;
-  }).join("");
+    `).join("");
+  }
 }
 
 document.getElementById("studentSearch").addEventListener("input", renderStudents);
 
 document.getElementById("studentsTable").addEventListener("click", event => {
-  const button = event.target.closest("[data-delete-student]");
-  if (!button) return;
+  const archiveButton = event.target.closest("[data-archive-student]");
+  const deleteButton = event.target.closest("[data-delete-student]");
 
-  const id = button.dataset.deleteStudent;
-  const student = studentById(id);
+  if (archiveButton) {
+    const id = archiveButton.dataset.archiveStudent;
+    const student = studentById(id);
 
-  if (!student) return;
+    if (!student) return;
 
-  if (data.payments.some(payment => payment.studentId === id)) {
-    showToast("Students with payment records cannot be deleted.", true);
+    if (!confirm(`Archive student "${student.name}"?`)) return;
+
+    student.archived = true;
+
+    if (!saveData()) {
+      student.archived = false;
+      return;
+    }
+
+    renderAll();
+    showToast("Student archived successfully.");
     return;
   }
 
-  if (!confirm(`Delete student "${student.name}"?`)) return;
+  if (deleteButton) {
+    const id = deleteButton.dataset.deleteStudent;
+    const student = studentById(id);
 
-  data.students = data.students.filter(item => item.id !== id);
+    if (!student) return;
 
-  if (!saveData()) return;
+    if (data.payments.some(payment => payment.studentId === id)) {
+      showToast("Students with payment records cannot be deleted.", true);
+      return;
+    }
+
+    if (!confirm(`Delete student "${student.name}"?`)) return;
+
+    data.students = data.students.filter(item => item.id !== id);
+
+    if (!saveData()) return;
+
+    renderAll();
+    showToast("Student record deleted.");
+  }
+});
+
+document.getElementById("archivedStudentsTable").addEventListener("click", event => {
+  const restoreButton = event.target.closest("[data-restore-student]");
+  if (!restoreButton) return;
+
+  const id = restoreButton.dataset.restoreStudent;
+  const student = studentById(id);
+
+  if (!student || !student.archived) return;
+
+  if (!confirm(`Restore student "${student.name}"?`)) return;
+
+  student.archived = false;
+
+  if (!saveData()) {
+    student.archived = true;
+    return;
+  }
 
   renderAll();
-  showToast("Student record deleted.");
+  showToast("Student restored successfully.");
 });
 
 /* ==================================
@@ -354,12 +499,18 @@ document.getElementById("collectionForm").addEventListener("submit", event => {
 
   const name = document.getElementById("collectionName").value.trim();
   const amount = Number(document.getElementById("collectionAmount").value);
-  const dueDate = document.getElementById("collectionDue").value;
+  const enteredDueDate = document.getElementById("collectionDue").value.trim();
+const dueDate = parseMMDDYYYY(enteredDueDate);
 
   if (!name || !Number.isFinite(amount) || amount <= 0) {
     showToast("Enter a collection name and a valid amount.", true);
     return;
   }
+
+  if (enteredDueDate && dueDate === null) {
+  showToast("Enter a valid date in MM/DD/YYYY format.", true);
+  return;
+}
 
   data.collections.push({
     id: "COL-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
@@ -384,52 +535,121 @@ document.getElementById("collectionForm").addEventListener("submit", event => {
 function renderCollections() {
   const tbody = document.getElementById("collectionsTable");
 
-  if (!data.collections.length) {
-    tbody.innerHTML = `<tr><td colspan="6">No collections yet. Create your first collection.</td></tr>`;
-    return;
+  const activeCollections = data.collections.filter(
+    collection => !collection.archived
+  );
+
+  const archivedCollections = data.collections.filter(
+    collection => collection.archived
+  );
+
+  if (!activeCollections.length) {
+    tbody.innerHTML =
+      `<tr><td colspan="6">No active collections. Create a new collection.</td></tr>`;
+  } else {
+    tbody.innerHTML = activeCollections.map(collection => {
+      const collected = totalCollectedForCollection(collection.id);
+      const active = isCollectionActive(collection);
+
+      const hasPayments = data.payments.some(
+        payment => payment.collectionId === collection.id
+      );
+
+      return `
+        <tr>
+          <td><strong>${escapeHTML(collection.name)}</strong></td>
+          <td>${money(collection.amount)}</td>
+          <td>${formatDate(collection.dueDate)}</td>
+          <td>${money(collected)}</td>
+          <td>
+            <span class="status ${active ? "" : "closed"}">
+              ${active ? "Active" : "Past Due"}
+            </span>
+          </td>
+          <td>
+            <button class="small-button"
+              data-pay-collection="${escapeHTML(collection.id)}"
+              ${!active ? "disabled" : ""}>
+              Record Payment
+            </button>
+
+            ${
+              hasPayments
+                ? `<button class="secondary" data-archive-collection="${escapeHTML(collection.id)}">Archive</button>`
+                : `<button class="danger" data-delete-collection="${escapeHTML(collection.id)}">Delete</button>`
+            }
+          </td>
+        </tr>
+      `;
+    }).join("");
   }
 
-  tbody.innerHTML = data.collections.map(collection => {
-    const collected = totalCollectedForCollection(collection.id);
-    const active = isCollectionActive(collection);
-    const hasPayments = data.payments.some(
-      payment => payment.collectionId === collection.id
-    );
+  const archivedBody = document.getElementById("archivedCollectionsTable");
 
-    return `
+  if (!archivedCollections.length) {
+    archivedBody.innerHTML =
+      `<tr><td colspan="4">No archived collections.</td></tr>`;
+  } else {
+    archivedBody.innerHTML = archivedCollections.map(collection => `
       <tr>
-        <td><strong>${escapeHTML(collection.name)}</strong></td>
+        <td>${escapeHTML(collection.name)}</td>
         <td>${money(collection.amount)}</td>
         <td>${formatDate(collection.dueDate)}</td>
-        <td>${money(collected)}</td>
         <td>
-          <span class="status ${active ? "" : "closed"}">
-            ${active ? "Active" : "Past Due"}
-          </span>
-        </td>
-        <td>
-          <button class="small-button" data-pay-collection="${escapeHTML(collection.id)}"
-            ${!active ? "disabled" : ""}>Record Payment</button>
-          <button class="danger" data-delete-collection="${escapeHTML(collection.id)}"
-            ${hasPayments ? "disabled title='Collection has payment records'" : ""}>Delete</button>
+          <button class="secondary"
+            data-restore-collection="${escapeHTML(collection.id)}">
+            Restore
+          </button>
         </td>
       </tr>
-    `;
-  }).join("");
+    `).join("");
+  }
 }
+
 
 document.getElementById("collectionsTable").addEventListener("click", event => {
   const payButton = event.target.closest("[data-pay-collection]");
+  const archiveButton = event.target.closest("[data-archive-collection]");
   const deleteButton = event.target.closest("[data-delete-collection]");
 
+  // Record Payment
   if (payButton) {
+    const id = payButton.dataset.payCollection;
+    const collection = collectionById(id);
+
+    if (!collection || collection.archived || !isCollectionActive(collection)) {
+      showToast("This collection is not available for payment.", true);
+      return;
+    }
+
     showPage("payments");
-    document.getElementById("paymentCollection").value =
-      payButton.dataset.payCollection;
+    document.getElementById("paymentCollection").value = id;
     updatePaymentInfo();
     return;
   }
 
+  // Archive collection
+  if (archiveButton) {
+    const id = archiveButton.dataset.archiveCollection;
+    const collection = collectionById(id);
+
+    if (!collection || collection.archived) return;
+
+    if (!confirm(`Archive collection "${collection.name}"?`)) return;
+
+    collection.archived = true;
+
+    if (!saveData()) {
+      collection.archived = false;
+      return;
+    }
+
+    renderAll();
+    showToast("Collection archived successfully.");
+    return;
+  }
+
+  // Permanently delete collection without payments
   if (deleteButton) {
     const id = deleteButton.dataset.deleteCollection;
     const collection = collectionById(id);
@@ -452,9 +672,34 @@ document.getElementById("collectionsTable").addEventListener("click", event => {
   }
 });
 
+// Restore archived collections
+document.getElementById("archivedCollectionsTable").addEventListener("click", event => {
+  const restoreButton = event.target.closest("[data-restore-collection]");
+  if (!restoreButton) return;
+
+  const id = restoreButton.dataset.restoreCollection;
+  const collection = collectionById(id);
+
+  if (!collection || !collection.archived) return;
+
+  if (!confirm(`Restore collection "${collection.name}"?`)) return;
+
+  collection.archived = false;
+
+  if (!saveData()) {
+    collection.archived = true;
+    return;
+  }
+
+  renderAll();
+  showToast("Collection restored successfully.");
+});
+
+
 /* ==================================
    PAYMENT FORM
 ================================== */
+
 
 function populatePaymentOptions() {
   const studentSelect = document.getElementById("paymentStudent");
@@ -463,32 +708,44 @@ function populatePaymentOptions() {
   const previousStudent = studentSelect.value;
   const previousCollection = collectionSelect.value;
 
+  // Show active students only.
   studentSelect.innerHTML =
     `<option value="">Select a student</option>` +
-    data.students.map(student => `
-      <option value="${escapeHTML(student.id)}">
-        ${escapeHTML(student.id)} — ${escapeHTML(student.name)}
-      </option>
-    `).join("");
+    data.students
+      .filter(student => !student.archived)
+      .map(student => `
+        <option value="${escapeHTML(student.id)}">
+          ${escapeHTML(student.id)} — ${escapeHTML(student.name)}
+        </option>
+      `).join("");
 
+  // Show active, non-archived collections only.
   collectionSelect.innerHTML =
     `<option value="">Select a collection</option>` +
-    data.collections.filter(isCollectionActive).map(collection => `
-      <option value="${escapeHTML(collection.id)}">
-        ${escapeHTML(collection.name)} — ${money(collection.amount)}
-      </option>
-    `).join("");
+    data.collections
+      .filter(collection => !collection.archived && isCollectionActive(collection))
+      .map(collection => `
+        <option value="${escapeHTML(collection.id)}">
+          ${escapeHTML(collection.name)} — ${money(collection.amount)}
+        </option>
+      `).join("");
 
-  if (data.students.some(student => student.id === previousStudent)) {
+  // Preserve previous selections only if they are still available.
+  if (data.students.some(student =>
+    student.id === previousStudent && !student.archived
+  )) {
     studentSelect.value = previousStudent;
   }
 
   if (data.collections.some(collection =>
-    collection.id === previousCollection && isCollectionActive(collection)
+    collection.id === previousCollection &&
+    !collection.archived &&
+    isCollectionActive(collection)
   )) {
     collectionSelect.value = previousCollection;
   }
 }
+
 
 document.getElementById("paymentDate").value = today();
 
@@ -538,7 +795,7 @@ document.getElementById("paymentForm").addEventListener("submit", event => {
   const student = studentById(studentId);
   const collection = collectionById(collectionId);
 
-  if (!student || !collection) {
+  if (!student || student.archived || !collection || collection.archived) {
     showToast("Select a valid student and fee collection.", true);
     return;
   }
@@ -596,6 +853,11 @@ document.getElementById("paymentForm").addEventListener("submit", event => {
   document.getElementById("paymentStudent").value = studentId;
   document.getElementById("paymentCollection").value = collectionId;
   updatePaymentInfo();
+
+    paymentSuccessSound.currentTime = 0;
+  paymentSuccessSound.play().catch(error => {
+    console.warn("Could not play payment success sound:", error);
+  });
 
   showReceipt(payment.id);
   showToast("Payment recorded. Receipt generated.");
@@ -825,56 +1087,77 @@ document.getElementById("exportCsv").addEventListener("click", () => {
    DASHBOARD
 ================================== */
 
+
 function renderDashboard() {
+  const activeStudents = data.students.filter(
+    student => !student.archived
+  );
+
+  const activeCollections = data.collections.filter(
+    collection => !collection.archived
+  );
+
+  // Keep all historical payments in the total collected.
   const totalCollected = data.payments.reduce(
     (total, payment) => total + Number(payment.amount), 0
   );
 
-  const totalBalance = data.collections.reduce((total, collection) => {
-    return total + data.students.reduce((studentTotal, student) => {
+  // Calculate outstanding balances using active records only.
+  const totalBalance = activeCollections.reduce((total, collection) => {
+    return total + activeStudents.reduce((studentTotal, student) => {
       return studentTotal + balanceFor(student.id, collection.id);
     }, 0);
   }, 0);
 
-  document.getElementById("statStudents").textContent = data.students.length;
+  document.getElementById("statStudents").textContent =
+    activeStudents.length;
 
   document.getElementById("statCollections").textContent =
-    data.collections.filter(isCollectionActive).length;
+    activeCollections.filter(isCollectionActive).length;
 
-  document.getElementById("statCollected").textContent = money(totalCollected);
-  document.getElementById("statBalance").textContent = money(totalBalance);
+  document.getElementById("statCollected").textContent =
+    money(totalCollected);
 
+  document.getElementById("statBalance").textContent =
+    money(totalBalance);
+
+  // Recent active collections only.
   const collectionsBody = document.getElementById("dashboardCollections");
 
-  if (!data.collections.length) {
+  const recentCollections = [...activeCollections]
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
+    .slice(0, 5);
+
+  if (!recentCollections.length) {
     collectionsBody.innerHTML =
-      `<tr><td colspan="4">No collections yet. Create one in Collections.</td></tr>`;
+      `<tr><td colspan="4">No active collections yet.</td></tr>`;
   } else {
-    collectionsBody.innerHTML = [...data.collections]
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .slice(0, 5)
-      .map(collection => `
-        <tr>
-          <td>${escapeHTML(collection.name)}</td>
-          <td>${money(collection.amount)}</td>
-          <td>${money(totalCollectedForCollection(collection.id))}</td>
-          <td>
-            <span class="status ${isCollectionActive(collection) ? "" : "closed"}">
-              ${isCollectionActive(collection) ? "Active" : "Past Due"}
-            </span>
-          </td>
-        </tr>
-      `).join("");
+    collectionsBody.innerHTML = recentCollections.map(collection => `
+      <tr>
+        <td>${escapeHTML(collection.name)}</td>
+        <td>${money(collection.amount)}</td>
+        <td>${money(totalCollectedForCollection(collection.id))}</td>
+        <td>
+          <span class="status ${isCollectionActive(collection) ? "" : "closed"}">
+            ${isCollectionActive(collection) ? "Active" : "Past Due"}
+          </span>
+        </td>
+      </tr>
+    `).join("");
   }
 
+  // Keep historical payments visible, including archived records.
   const paymentsBody = document.getElementById("dashboardPayments");
 
   const recentPayments = [...data.payments]
-    .sort((a, b) => (b.createdAt || b.date).localeCompare(a.createdAt || a.date))
+    .sort((a, b) =>
+      (b.createdAt || b.date).localeCompare(a.createdAt || a.date)
+    )
     .slice(0, 5);
 
   if (!recentPayments.length) {
-    paymentsBody.innerHTML = `<tr><td colspan="5">No payments recorded yet.</td></tr>`;
+    paymentsBody.innerHTML =
+      `<tr><td colspan="5">No payments recorded yet.</td></tr>`;
   } else {
     paymentsBody.innerHTML = recentPayments.map(payment => {
       const student = studentById(payment.studentId);
@@ -893,6 +1176,7 @@ function renderDashboard() {
   }
 }
 
+
 /* ==================================
    REFRESH ALL PAGES
 ================================== */
@@ -907,5 +1191,64 @@ function renderAll() {
 }
 
 // Initial display
+// ARCHIVED PANEL VISIBILITY
+
+document.getElementById("viewArchivedCollections").addEventListener("click", () => {
+  document.getElementById("archivedCollectionsPanel").classList.remove("hidden");
+});
+
+document.getElementById("hideArchivedCollections").addEventListener("click", () => {
+  document.getElementById("archivedCollectionsPanel").classList.add("hidden");
+});
+
+document.getElementById("viewArchivedStudents").addEventListener("click", () => {
+  document.getElementById("archivedStudentsPanel").classList.remove("hidden");
+});
+
+document.getElementById("hideArchivedStudents").addEventListener("click", () => {
+  document.getElementById("archivedStudentsPanel").classList.add("hidden");
+});
 renderAll();
 showPage("dashboard");
+
+
+// ==========================================
+// MOBILE HAMBURGER MENU
+// ==========================================
+
+const hamburgerMenu = document.getElementById("hamburgerMenu");
+const sidebarOverlay = document.getElementById("sidebarOverlay");
+
+function openMobileMenu() {
+  document.body.classList.add("menu-open");
+  hamburgerMenu.setAttribute("aria-expanded", "true");
+}
+
+function closeMobileMenu() {
+  document.body.classList.remove("menu-open");
+  hamburgerMenu.setAttribute("aria-expanded", "false");
+}
+
+// Toggle menu
+hamburgerMenu.addEventListener("click", () => {
+  if (document.body.classList.contains("menu-open")) {
+    closeMobileMenu();
+  } else {
+    openMobileMenu();
+  }
+});
+
+// Close when overlay is clicked
+sidebarOverlay.addEventListener("click", closeMobileMenu);
+
+// Close after selecting a navigation item
+document.querySelectorAll(".sidebar .nav-button").forEach(button => {
+  button.addEventListener("click", closeMobileMenu);
+});
+
+// Close using Escape key
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeMobileMenu();
+  }
+});
