@@ -164,26 +164,13 @@
               step="0.01" required placeholder="e.g. 50">
           </label>
 
-<label>Due Date (MM/DD/YYYY)
-  <div class="date-input-group">
-    <input
-      id="collectionDue"
-      type="text"
-      placeholder="MM/DD/YYYY"
-      inputmode="numeric"
-      maxlength="10"
-      autocomplete="off"
-    >
-
-    <button
-      type="button"
-      class="secondary calendar-button"
-      id="openDueDatePicker"
-      aria-label="Open calendar"
-    >
-      📅
-    </button>
-  </div>
+<label>Due Date
+  <input
+    id="collectionDue"
+    type="date"
+    required
+  >
+</label>
 
   <div id="dueDateCalendar" class="custom-calendar hidden">
     <div class="calendar-header">
@@ -275,7 +262,7 @@
         <div class="form-grid">
           <label>Student ID
             <input id="studentId" required maxlength="40"
-              placeholder="e.g. 2026-001">
+              placeholder="e.g. 26-1234">
           </label>
           <label>Full Name
             <input id="studentName" required maxlength="100"
