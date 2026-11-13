@@ -758,3 +758,23 @@ footer {
 .calendar-empty {
   min-height: 32px;
 }
+
+
+/* Fix FeeCollect sidebar logo */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.brand > div {
+  min-width: 0;
+}
+
