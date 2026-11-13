@@ -84,73 +84,6 @@ function formatDate(value) {
   return `${parts[1]}/${parts[2]}/${parts[0]}`;
 }
 
-// ==========================================
-// CUSTOM DUE DATE CALENDAR
-// ==========================================
-
-const dueDateInput = document.getElementById("collectionDue");
-const calendarButton = document.getElementById("openDueDatePicker");
-const dueDateCalendar = document.getElementById("dueDateCalendar");
-const calendarMonthYear = document.getElementById("calendarMonthYear");
-const calendarDays = document.getElementById("calendarDays");
-const prevMonthButton = document.getElementById("prevMonth");
-const nextMonthButton = document.getElementById("nextMonth");
-
-let calendarDate = new Date();
-calendarDate.setDate(1);
-
-function renderDueDateCalendar() {
-  const year = calendarDate.getFullYear();
-  const month = calendarDate.getMonth();
-
-  calendarMonthYear.textContent = calendarDate.toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric"
-  });
-
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  calendarDays.innerHTML = "";
-
-  for (let i = 0; i < firstDay; i++) {
-    const blank = document.createElement("span");
-    blank.className = "calendar-empty";
-    calendarDays.appendChild(blank);
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = day;
-    button.className = "calendar-day";
-
-    button.addEventListener("click", () => {
-      const monthText = String(month + 1).padStart(2, "0");
-      const dayText = String(day).padStart(2, "0");
-
-      dueDateInput.value = `${monthText}/${dayText}/${year}`;
-      dueDateCalendar.classList.add("hidden");
-    });
-
-    calendarDays.appendChild(button);
-  }
-}
-
-calendarButton.addEventListener("click", () => {
-  dueDateCalendar.classList.toggle("hidden");
-  renderDueDateCalendar();
-});
-
-prevMonthButton.addEventListener("click", () => {
-  calendarDate.setMonth(calendarDate.getMonth() - 1);
-  renderDueDateCalendar();
-});
-
-nextMonthButton.addEventListener("click", () => {
-  calendarDate.setMonth(calendarDate.getMonth() + 1);
-  renderDueDateCalendar();
-});
 
 // ==========================================
 // DUE DATE CALENDAR PICKER
@@ -499,18 +432,12 @@ document.getElementById("collectionForm").addEventListener("submit", event => {
 
   const name = document.getElementById("collectionName").value.trim();
   const amount = Number(document.getElementById("collectionAmount").value);
-  const enteredDueDate = document.getElementById("collectionDue").value.trim();
-const dueDate = parseMMDDYYYY(enteredDueDate);
+  const dueDate = document.getElementById("collectionDue").value;
 
   if (!name || !Number.isFinite(amount) || amount <= 0) {
     showToast("Enter a collection name and a valid amount.", true);
     return;
   }
-
-  if (enteredDueDate && dueDate === null) {
-  showToast("Enter a valid date in MM/DD/YYYY format.", true);
-  return;
-}
 
   data.collections.push({
     id: "COL-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
@@ -761,13 +688,19 @@ function updatePaymentInfo() {
   if (!studentId || !collectionId) {
     info.textContent = "Select a student and collection to view the balance.";
     amountInput.removeAttribute("max");
+    amountInput.disabled = false;
+    amountInput.placeholder = "Enter payment amount";
     return;
   }
 
   const student = studentById(studentId);
   const collection = collectionById(collectionId);
 
-  if (!student || !collection) return;
+  if (!student || !collection) {
+    amountInput.removeAttribute("max");
+    amountInput.disabled = false;
+    return;
+  }
 
   const paid = paidFor(studentId, collectionId);
   const balance = balanceFor(studentId, collectionId);
@@ -779,8 +712,17 @@ function updatePaymentInfo() {
     <strong>Remaining Balance:</strong> ${money(balance)}
   `;
 
-  amountInput.max = balance.toFixed(2);
-  amountInput.placeholder = balance > 0 ? `Up to ${balance.toFixed(2)}` : "Fully paid";
+  if (balance > 0) {
+    amountInput.max = balance.toFixed(2);
+    amountInput.min = "0.01";
+    amountInput.disabled = false;
+    amountInput.placeholder = `Up to ${balance.toFixed(2)}`;
+  } else {
+    amountInput.removeAttribute("max");
+    amountInput.disabled = true;
+    amountInput.value = "";
+    amountInput.placeholder = "Fully paid";
+  }
 }
 
 document.getElementById("paymentForm").addEventListener("submit", event => {
