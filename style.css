@@ -130,6 +130,25 @@ button {
   margin-bottom: 26px;
 }
 
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hamburger {
+  display: none;
+  border: 0;
+  background: var(--blue-light);
+  color: var(--navy);
+  border-radius: 8px;
+  padding: 8px 11px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+
 .eyebrow {
   margin-bottom: 5px;
 }
@@ -241,6 +260,12 @@ button:disabled {
 .stat-card {
   padding: 20px;
   min-width: 0;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 18px rgba(23, 43, 77, 0.12);
 }
 
 .stat-card span {
@@ -493,36 +518,76 @@ footer {
   }
 }
 
+
+
+.sidebar-overlay {
+  display: none;
+}
+
 @media (max-width: 720px) {
   .sidebar {
-    position: static;
-    width: 100%;
-    padding: 15px;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(280px, 85vw);
+    padding: 22px 16px;
+    overflow-y: auto;
+    z-index: 1001;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  body.menu-open .sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  body.menu-open .sidebar-overlay {
+    opacity: 1;
+    visibility: visible;
   }
 
   .brand {
-    padding-bottom: 15px;
+    padding-bottom: 28px;
   }
 
-  .menu-label, .sidebar-note {
-    display: none;
+  .menu-label {
+    display: block;
+  }
+
+  .sidebar-note {
+    display: grid;
   }
 
   .sidebar nav {
-    display: flex;
-    overflow-x: auto;
-    padding-bottom: 3px;
+    display: grid;
+    overflow: visible;
+    padding-bottom: 0;
   }
 
   .nav-button {
-    white-space: nowrap;
-    padding: 10px;
-    font-size: 12px;
+    white-space: normal;
+    padding: 13px 12px;
+    font-size: 14px;
   }
 
   .main {
     margin-left: 0;
     padding: 18px 12px;
+  }
+
+  .hamburger {
+    display: inline-block;
+    flex-shrink: 0;
   }
 
   h1 {
@@ -572,6 +637,8 @@ footer {
   }
 }
 
+
+
 @media print {
   body {
     background: white;
@@ -605,4 +672,89 @@ footer {
   .receipt {
     border: 1px solid #888;
   }
+}
+
+/* ==========================================
+   CUSTOM DUE DATE CALENDAR
+========================================== */
+
+.date-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.date-input-group input {
+  flex: 1;
+  min-width: 0;
+}
+
+.calendar-button {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.custom-calendar {
+  width: 280px;
+  margin-top: 8px;
+  padding: 14px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
+}
+
+.custom-calendar.hidden {
+  display: none;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.calendar-header button {
+  border: none;
+  background: var(--blue-light);
+  color: var(--navy);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.calendar-weekdays,
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  text-align: center;
+}
+
+.calendar-weekdays span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  padding-bottom: 8px;
+}
+
+.calendar-day {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.calendar-day:hover {
+  background: var(--blue-light);
+  color: var(--blue);
+}
+
+.calendar-empty {
+  min-height: 32px;
 }
