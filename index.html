@@ -8,10 +8,13 @@
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
+
 <body>
-  <aside class="sidebar">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="mobileSidebar">
     <div class="brand">
-       <img src="logo.png" alt="FeeCollect Logo">
+      <img src="images/logo.png" alt="FeeCollect Logo">
       <div>
         <h2>FeeCollect</h2>
         <small>Class Fee Collection</small>
@@ -19,6 +22,7 @@
     </div>
 
     <p class="menu-label">MAIN MENU</p>
+
     <nav>
       <button class="nav-button active" data-page="dashboard">▦ Dashboard</button>
       <button class="nav-button" data-page="collections">▤ Collections</button>
@@ -35,73 +39,84 @@
 
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+  <!-- MAIN CONTENT -->
   <main class="main">
-    
-<header class="topbar">
-  <div class="topbar-left">
-    <button
-      class="hamburger"
-      id="hamburgerMenu"
-      aria-label="Open navigation menu"
-      aria-expanded="false"
-      aria-controls="mobileSidebar"
-    >
-      ☰
-    </button>
 
-    <div>
-      <p class="eyebrow">CLASS FEE MANAGEMENT</p>
-      <h1 id="pageTitle">Dashboard</h1>
-    </div>
-  </div>
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button
+          class="hamburger"
+          id="hamburgerMenu"
+          aria-label="Open navigation menu"
+          aria-expanded="false"
+          aria-controls="mobileSidebar"
+        >
+          ☰
+        </button>
 
-  <span class="role">Treasurer</span>
-</header>
+        <div>
+          <p class="eyebrow">CLASS FEE MANAGEMENT</p>
+          <h1 id="pageTitle">Dashboard</h1>
+        </div>
+      </div>
 
+      <span class="role">Treasurer</span>
+    </header>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <!-- DASHBOARD -->
     <section id="dashboard" class="page active-page">
+
       <div class="welcome">
         <div>
           <h2>Welcome to FeeCollect</h2>
           <p>Manage student fees and keep payment records organized.</p>
         </div>
+
         <button class="primary" data-go="payments">+ Record Payment</button>
       </div>
 
       <div class="stats">
+
         <article class="stat-card">
           <span>Registered Students</span>
           <strong id="statStudents">0</strong>
           <small>Students in the system</small>
         </article>
+
         <article class="stat-card">
           <span>Active Collections</span>
           <strong id="statCollections">0</strong>
           <small>Collections accepting payments</small>
         </article>
+
         <article class="stat-card">
           <span>Total Collected</span>
           <strong id="statCollected">₱0.00</strong>
           <small>Payments recorded so far</small>
         </article>
+
         <article class="stat-card">
           <span>Outstanding Balance</span>
           <strong id="statBalance">₱0.00</strong>
           <small>Unpaid amounts across collections</small>
         </article>
+
       </div>
 
+      <!-- CURRENT COLLECTIONS -->
       <div class="panel">
         <div class="panel-heading">
           <div>
             <h2>Current Collections</h2>
             <p>Monitor your class fees.</p>
           </div>
+
           <button class="secondary" data-go="collections">View All</button>
         </div>
+
         <div class="table-wrap">
           <table>
             <thead>
@@ -112,19 +127,23 @@
                 <th>Status</th>
               </tr>
             </thead>
+
             <tbody id="dashboardCollections"></tbody>
           </table>
         </div>
       </div>
 
+      <!-- RECENT PAYMENTS -->
       <div class="panel">
         <div class="panel-heading">
           <div>
             <h2>Recent Payments</h2>
             <p>Latest recorded transactions.</p>
           </div>
+
           <button class="secondary" data-go="history">View History</button>
         </div>
+
         <div class="table-wrap">
           <table>
             <thead>
@@ -136,70 +155,78 @@
                 <th>Date</th>
               </tr>
             </thead>
+
             <tbody id="dashboardPayments"></tbody>
           </table>
         </div>
       </div>
+
     </section>
+    <!-- END DASHBOARD -->
+
 
     <!-- COLLECTIONS -->
     <section id="collections" class="page">
+
       <div class="section-intro">
         <div>
           <h2>Fee Collections</h2>
           <p>Create and manage the fees students need to pay.</p>
         </div>
+
         <button class="primary" id="showCollectionForm">+ New Collection</button>
       </div>
 
+      <!-- COLLECTION FORM -->
       <form id="collectionForm" class="panel form-panel hidden">
+
         <h3>Create a Collection</h3>
+
         <div class="form-grid">
+
           <label>Collection Name
-            <input id="collectionName" required maxlength="80"
-              placeholder="e.g. Classroom Cleaning Fee">
+            <input
+              id="collectionName"
+              required
+              maxlength="80"
+              placeholder="e.g. Classroom Cleaning Fee"
+            >
           </label>
+
           <label>Amount per Student (₱)
-            <input id="collectionAmount" type="number" min="0.01"
-              step="0.01" required placeholder="e.g. 50">
+            <input
+              id="collectionAmount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              required
+              placeholder="e.g. 50"
+            >
           </label>
 
-<label>Due Date
-  <input
-    id="collectionDue"
-    type="date"
-    required
-  >
-</label>
-
-  <div id="dueDateCalendar" class="custom-calendar hidden">
-    <div class="calendar-header">
-      <button type="button" id="prevMonth">‹</button>
-      <strong id="calendarMonthYear"></strong>
-      <button type="button" id="nextMonth">›</button>
-    </div>
-
-    <div class="calendar-weekdays">
-      <span>Sun</span>
-      <span>Mon</span>
-      <span>Tue</span>
-      <span>Wed</span>
-      <span>Thu</span>
-      <span>Fri</span>
-      <span>Sat</span>
-    </div>
-
-    <div id="calendarDays" class="calendar-days"></div>
-  </div>
-</label>
+          <label>Due Date
+            <input
+              id="collectionDue"
+              type="date"
+              required
+            >
+          </label>
 
         </div>
+
         <div class="form-actions">
-          <button type="button" class="secondary" id="cancelCollection">Cancel</button>
-          <button type="submit" class="primary">Save Collection</button>
+          <button type="button" class="secondary" id="cancelCollection">
+            Cancel
+          </button>
+
+          <button type="submit" class="primary">
+            Save Collection
+          </button>
         </div>
+
       </form>
 
+      <!-- COLLECTIONS TABLE -->
       <div class="panel">
         <div class="table-wrap">
           <table>
@@ -213,18 +240,22 @@
                 <th>Action</th>
               </tr>
             </thead>
+
             <tbody id="collectionsTable"></tbody>
           </table>
         </div>
       </div>
 
-      
+      <!-- ARCHIVED COLLECTIONS -->
       <button class="secondary" id="viewArchivedCollections">
         View Archived Collections
       </button>
+
       <div class="panel hidden" id="archivedCollectionsPanel">
+
         <div class="panel-heading">
           <h3>Archived Collections</h3>
+
           <button class="secondary" id="hideArchivedCollections">
             Hide Archived
           </button>
@@ -240,50 +271,88 @@
                 <th>Action</th>
               </tr>
             </thead>
+
             <tbody id="archivedCollectionsTable"></tbody>
           </table>
         </div>
+
       </div>
 
     </section>
+    <!-- END COLLECTIONS -->
+
 
     <!-- STUDENTS -->
     <section id="students" class="page">
+
       <div class="section-intro">
         <div>
           <h2>Student Records</h2>
           <p>The treasurer encodes and maintains student information.</p>
         </div>
+
         <button class="primary" id="showStudentForm">+ Add Student</button>
       </div>
 
+      <!-- STUDENT FORM -->
       <form id="studentForm" class="panel form-panel hidden">
+
         <h3>Student Information</h3>
+
         <div class="form-grid">
+
           <label>Student ID
-            <input id="studentId" required maxlength="40"
-              placeholder="e.g. 26-1234">
+            <input
+              id="studentId"
+              required
+              maxlength="40"
+              placeholder="e.g. 26-1234"
+            >
           </label>
+
           <label>Full Name
-            <input id="studentName" required maxlength="100"
-              placeholder="Last name, First name">
+            <input
+              id="studentName"
+              required
+              maxlength="100"
+              placeholder="Last name, First name"
+            >
           </label>
+
           <label>Course / Section
-            <input id="studentSection" maxlength="80"
-              placeholder="e.g. BSIT 2A">
+            <input
+              id="studentSection"
+              maxlength="80"
+              placeholder="e.g. BSIT 2A"
+            >
           </label>
+
         </div>
+
         <div class="form-actions">
-          <button type="button" class="secondary" id="cancelStudent">Cancel</button>
-          <button type="submit" class="primary">Save Student</button>
+          <button type="button" class="secondary" id="cancelStudent">
+            Cancel
+          </button>
+
+          <button type="submit" class="primary">
+            Save Student
+          </button>
         </div>
+
       </form>
 
+      <!-- STUDENTS TABLE -->
       <div class="panel">
+
         <div class="toolbar">
-          <input id="studentSearch" placeholder="Search by student ID or name...">
+          <input
+            id="studentSearch"
+            placeholder="Search by student ID or name..."
+          >
+
           <span id="studentCount" class="muted">0 students</span>
         </div>
+
         <div class="table-wrap">
           <table>
             <thead>
@@ -294,41 +363,56 @@
                 <th>Action</th>
               </tr>
             </thead>
+
             <tbody id="studentsTable"></tbody>
           </table>
         </div>
+
       </div>
-            <div class="panel">
-        
+
+      <!-- ARCHIVED STUDENTS -->
+      <div class="panel">
 
         <button class="secondary" id="viewArchivedStudents">
           View Archived Students
         </button>
-        <div class="panel hidden" id="archivedStudentsPanel">
-          <h3>Archived Students</h3>
-          <button class="secondary" id="hideArchivedStudents">
-            Hide Archived
-          </button>
+
+        <div class="hidden" id="archivedStudentsPanel">
+
+          <div class="panel-heading">
+            <h3>Archived Students</h3>
+
+            <button class="secondary" id="hideArchivedStudents">
+              Hide Archived
+            </button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student ID</th>
+                  <th>Full Name</th>
+                  <th>Course / Section</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+
+              <tbody id="archivedStudentsTable"></tbody>
+            </table>
+          </div>
+
         </div>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Student ID</th>
-                <th>Full Name</th>
-                <th>Course / Section</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="archivedStudentsTable"></tbody>
-          </table>
-        </div>
       </div>
+
     </section>
+    <!-- END STUDENTS -->
+
 
     <!-- RECORD PAYMENT -->
     <section id="payments" class="page">
+
       <div class="section-intro">
         <div>
           <h2>Record a Payment</h2>
@@ -336,30 +420,68 @@
         </div>
       </div>
 
+      <!-- PAYMENT FORM -->
       <form id="paymentForm" class="panel form-panel">
+
         <h3>Payment Details</h3>
+
         <div class="form-grid">
+
           <label>Student
             <select id="paymentStudent" required>
               <option value="">Select a student</option>
             </select>
           </label>
+
           <label>Fee Collection
             <select id="paymentCollection" required>
               <option value="">Select a collection</option>
             </select>
           </label>
-          <label>Amount Received (₱)
-            <input id="paymentAmount" type="number" min="0.01"
-              step="0.01" required placeholder="Enter amount">
+
+          <label>Cash Received (₱)
+            <input
+              id="cashReceived"
+              type="number"
+              min="0.01"
+              step="0.01"
+              required
+              placeholder="Enter cash received"
+            >
           </label>
+
           <label>Date of Payment
             <input id="paymentDate" type="date" required>
           </label>
+
           <label class="full-width">Notes (optional)
-            <input id="paymentNotes" maxlength="200"
-              placeholder="e.g. Partial payment">
+            <input
+              id="paymentNotes"
+              maxlength="200"
+              placeholder="e.g. Partial payment"
+            >
           </label>
+
+        </div>
+
+        <!-- PAYMENT AMOUNT, CASH RECEIVED, AND CHANGE -->
+        <div class="payment-cash-info">
+
+          <div>
+            <span>Payment Amount</span>
+            <strong id="displayPaymentAmount">₱0.00</strong>
+          </div>
+
+          <div>
+            <span>Cash Received</span>
+            <strong id="displayCashReceived">₱0.00</strong>
+          </div>
+
+          <div class="change-display">
+            <span>Change</span>
+            <strong id="displayChange">₱0.00</strong>
+          </div>
+
         </div>
 
         <div id="paymentInfo" class="payment-info">
@@ -367,28 +489,45 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="primary">Record Payment & Generate Receipt</button>
+          <button type="submit" class="primary">
+            Record Payment &amp; Generate Receipt
+          </button>
         </div>
+
       </form>
 
+      <!-- RECEIPT -->
       <div id="receiptArea" class="panel hidden"></div>
+
     </section>
+    <!-- END RECORD PAYMENT -->
+
 
     <!-- PAYMENT HISTORY -->
     <section id="history" class="page">
+
       <div class="section-intro">
         <div>
           <h2>Payment History</h2>
           <p>Review transactions and print receipts when needed.</p>
         </div>
-        <button class="secondary" id="exportCsv">Export CSV</button>
+
+        <button class="secondary" id="exportCsv">
+          Export CSV
+        </button>
       </div>
 
       <div class="panel">
+
         <div class="toolbar">
-          <input id="historySearch" placeholder="Search receipt, student, or collection...">
+          <input
+            id="historySearch"
+            placeholder="Search receipt, student, or collection..."
+          >
+
           <span id="historyCount" class="muted">0 payments</span>
         </div>
+
         <div class="table-wrap">
           <table>
             <thead>
@@ -401,13 +540,21 @@
                 <th>Action</th>
               </tr>
             </thead>
+
             <tbody id="historyTable"></tbody>
           </table>
         </div>
-      </div>
-    </section>
 
+      </div>
+
+    </section>
+    <!-- END PAYMENT HISTORY -->
+
+
+    <!-- FOOTER -->
     <footer>FeeCollect · Class Fee Collection System</footer>
+
   </main>
+
 </body>
 </html>
